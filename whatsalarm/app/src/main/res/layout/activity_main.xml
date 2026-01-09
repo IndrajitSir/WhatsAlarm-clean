@@ -2,49 +2,84 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:fillViewport="true">
 
     <LinearLayout
         android:orientation="vertical"
+        android:padding="16dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:spacing="12dp">
+        android:layout_height="wrap_content">
 
-        <Switch
-            android:id="@+id/switchEnable"
-            android:layout_width="wrap_content"
+        <!-- App Title -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enable alarms" />
+            android:text="WhatsAlarm"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"/>
 
-        <EditText
+        <!-- Enable WhatsAlarm -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Enable Alerts"
+                android:textSize="16sp"
+                android:layout_weight="1"/>
+
+            <Switch
+                android:id="@+id/switchEnable"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <!-- Keywords -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Keywords (comma separated)"
+            android:paddingTop="8dp"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/keywords"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Keywords (comma separated)" />
+            android:hint="good morning, urgent, meeting"
+            android:inputType="text"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/saveBtn"
-            android:text="Save keywords"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/btnQuietStart"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Quiet hours start" />
+            android:text="Save"
+            android:layout_marginTop="8dp"/>
 
-        <Button
-            android:id="@+id/btnQuietEnd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Quiet hours end" />
-
-        <Button
+        <!-- Notification Access -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnOpenNotifAccess"
-            android:text="Enable Notification Access"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Notification Access"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Ringtone Picker -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnChooseRingtone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Choose Alarm Ringtone"
+            android:layout_marginTop="12dp"/>
 
     </LinearLayout>
 </ScrollView>

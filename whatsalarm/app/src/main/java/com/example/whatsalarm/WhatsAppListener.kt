@@ -1,51 +1,63 @@
 package com.example.whatsalarm
 
-import android.app.Notification
-import android.media.MediaPlayer
+import android.content.Intent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import java.time.LocalTime
+import android.os.Build
 
 class WhatsAppListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+
+        // Only react to WhatsApp notifications
+        val pkg = sbn.packageName ?: return
+        if (!pkg.contains("com.whatsapp")) return
+
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+
+        // Master toggle
         if (!prefs.getBoolean("enabled", true)) return
+        if (prefs.getBoolean("alarm_running", false)) return
+        // Pull *all* possible text from the notification
+        val extras = sbn.notification.extras
+        val texts = mutableListOf<String>()
 
-        if (sbn.packageName != "com.whatsapp") return
+        extras.getCharSequence("android.text")?.let { texts.add(it.toString().lowercase()) }
+        extras.getCharSequence("android.bigText")?.let { texts.add(it.toString().lowercase()) }
+        extras.getCharSequence("android.title")?.let { texts.add(it.toString().lowercase()) }
 
-        val text = sbn.notification.extras.getString(Notification.EXTRA_TEXT)?.lowercase() ?: ""
-        val group = sbn.notification.extras.getString(Notification.EXTRA_TITLE) ?: "default"
+        if (texts.isEmpty()) return
 
-        val keywords = (prefs.getString("keywords", "") ?: "")
-            .lowercase().split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        // Keywords
+        val keywords = prefs.getString("keywords", "")!!
+            .split(",")
+            .map { it.trim().lowercase() }
+            .filter { it.isNotEmpty() }
 
-        if (keywords.none { text.contains(it) }) return
+        if (keywords.isEmpty()) return
 
-        if (isQuietHours(
-                prefs.getString("quietStart","22:00")!!,
-                prefs.getString("quietEnd","07:00")!!
-            )) return
-
-        playSoundForGroup(group.lowercase())
-    }
-
-    private fun isQuietHours(start:String, end:String): Boolean {
-        return try {
-            val now = LocalTime.now()
-            val s = LocalTime.parse(start)
-            val e = LocalTime.parse(end)
-            if (s <= e) now.isAfter(s) && now.isBefore(e) else now.isAfter(s) || now.isBefore(e)
-        } catch (e:Exception){ false }
-    }
-
-    private fun playSoundForGroup(group:String){
-        val resId = when {
-            group.contains("family") -> R.raw.alarm_family
-            group.contains("office") -> R.raw.alarm_office
-            else -> R.raw.alarm_default
+        // Check for match and find the first keyword matched
+        var matchedKeyword: String? = null
+        loop@ for (text in texts) {
+            for (keyword in keywords) {
+                if (text.contains(keyword)) {
+                    matchedKeyword = keyword
+                    break@loop
+                }
+            }
         }
-        val mp = MediaPlayer.create(this,resId)
-        mp.start()
+
+        // Trigger alarm service if a keyword matched
+        matchedKeyword?.let {
+            val intent = Intent(this, AlarmService::class.java)
+            intent.action = "START_ALARM"
+            intent.putExtra("keyword", it)  // pass matched keyword
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        }
     }
 }
