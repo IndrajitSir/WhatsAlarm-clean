@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.app.PendingIntent
 import android.app.AlarmManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
 class AlarmService : Service() {
@@ -19,6 +20,7 @@ class AlarmService : Service() {
     private var lastKeyword: String? = null
 
     companion object {
+        private const val TAG = "AlarmService"
         const val CHANNEL_ID = "whatsalarm_channel"
         const val NOTIF_ID = 1
 
@@ -39,30 +41,40 @@ class AlarmService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_START_ALARM, "START_ALARM" -> {
-                if (mediaPlayer != null) return START_STICKY
-                lastKeyword = intent.getStringExtra(EXTRA_KEYWORD)
-                // mark alarm running
-                getSharedPreferences("settings", MODE_PRIVATE)
-                    .edit()
-                    .putBoolean("alarm_running", true)
-                    .apply()
-                startForeground(NOTIF_ID, buildNotification())
-                startAlarmSound()
-            }
+        try {
+            when (intent?.action) {
+                ACTION_START_ALARM, "START_ALARM" -> {
+                    if (mediaPlayer != null) return START_STICKY
+                    lastKeyword = intent.getStringExtra(EXTRA_KEYWORD)
+                    // mark alarm running
+                    getSharedPreferences("settings", MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("alarm_running", true)
+                        .apply()
+                    startForeground(NOTIF_ID, buildNotification())
+                    startAlarmSound()
+                }
 
-            ACTION_STOP_ALARM, "STOP_ALARM" -> {
-                stopAlarm()
-                stopSelf()
-            }
+                ACTION_STOP_ALARM, "STOP_ALARM" -> {
+                    stopAlarm()
+                    stopSelf()
+                }
 
-            ACTION_SNOOZE_ALARM, "SNOOZE_ALARM" -> {
-                val mins = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
-                stopAlarm()
-                scheduleSnooze(mins)
-                stopSelf()
+                ACTION_SNOOZE_ALARM, "SNOOZE_ALARM" -> {
+                    val mins = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
+                    stopAlarm()
+                    scheduleSnooze(mins)
+                    stopSelf()
+                }
             }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Unhandled error in onStartCommand", t)
+            // Ensure we clear running flag to avoid stuck state
+            getSharedPreferences("settings", MODE_PRIVATE)
+                .edit()
+                .putBoolean("alarm_running", false)
+                .apply()
+            stopSelf()
         }
 
         return START_STICKY
@@ -76,35 +88,85 @@ class AlarmService : Service() {
             Uri.parse(it)
         } ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(applicationContext, uri)
-            setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
-            isLooping = true
-            setOnPreparedListener { start() }
-            prepareAsync()
+        try {
+            mediaPlayer = MediaPlayer().apply {
+                setOnErrorListener { mp, what, extra ->
+                    Log.e(TAG, "MediaPlayer error what=$what extra=$extra")
+                    try { mp.stop() } catch (_: Exception) {}
+                    try { mp.reset() } catch (_: Exception) {}
+                    try { mp.release() } catch (_: Exception) {}
+                    mediaPlayer = null
+                    // Clear running flag
+                    getSharedPreferences("settings", MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("alarm_running", false)
+                        .apply()
+                    stopSelf()
+                    true
+                }
+
+                // setDataSource and prepare can throw; wrap them
+                try {
+                    setDataSource(applicationContext, uri)
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                    isLooping = true
+                    setOnPreparedListener { it.start() }
+                    prepareAsync()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to prepare MediaPlayer for uri=$uri", e)
+                    try { reset() } catch (_: Exception) {}
+                    try { release() } catch (_: Exception) {}
+                    mediaPlayer = null
+                    // Clear running flag
+                    getSharedPreferences("settings", MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("alarm_running", false)
+                        .apply()
+                    // stop foreground/stop service
+                    try { stopForeground(true) } catch (_: Exception) {}
+                    stopSelf()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start alarm sound", e)
+            mediaPlayer = null
+            getSharedPreferences("settings", MODE_PRIVATE)
+                .edit()
+                .putBoolean("alarm_running", false)
+                .apply()
+            try { stopForeground(true) } catch (_: Exception) {}
+            stopSelf()
         }
     }
 
     private fun stopAlarm() {
         try {
-            mediaPlayer?.stop()
-        } catch (_: Exception) {}
-        try {
-            mediaPlayer?.release()
-        } catch (_: Exception) {}
-        mediaPlayer = null
+            mediaPlayer?.let {
+                if (it.isPlaying) {
+                    try { it.stop() } catch (_: Exception) {}
+                }
+                try { it.reset() } catch (_: Exception) {}
+                try { it.release() } catch (_: Exception) {}
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error stopping media player", e)
+        } finally {
+            mediaPlayer = null
+        }
 
         getSharedPreferences("settings", MODE_PRIVATE)
             .edit()
             .putBoolean("alarm_running", false)
             .apply()
 
-        try { stopForeground(true) } catch (_: Exception) {}
+        try { stopForeground(true) } catch (e: Exception) {
+            Log.w(TAG, "stopForeground failed", e)
+        }
     }
 
     private fun buildNotification(): Notification {
@@ -168,12 +230,16 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pending)
-        } else {
-            am.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule snooze", e)
         }
     }
 
@@ -188,8 +254,12 @@ class AlarmService : Service() {
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
 
-            getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
+            try {
+                getSystemService(NotificationManager::class.java)
+                    .createNotificationChannel(channel)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to create notification channel", e)
+            }
         }
     }
 
