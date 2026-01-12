@@ -5,7 +5,8 @@
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
     <application
         android:allowBackup="true"
         android:label="WhatsAlarm"
@@ -45,6 +46,10 @@
         <service
             android:name=".AlarmService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback|connectedDevice" />
+            android:foregroundServiceType="mediaPlayback" />
+
+        <receiver
+            android:name=".AlarmActionReceiver"
+            android:exported="false" />
     </application>
 </manifest>

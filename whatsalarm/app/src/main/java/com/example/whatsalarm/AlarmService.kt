@@ -19,6 +19,13 @@ class AlarmService : Service() {
     companion object {
         const val CHANNEL_ID = "whatsalarm_channel"
         const val NOTIF_ID = 1
+        const val ACTION_PLAY_ALARM = "com.example.whatsalarm.ACTION_PLAY_ALARM"
+        const val ACTION_STOP_ALARM = "com.example.whatsalarm.ACTION_STOP_ALARM"
+        const val ACTION_SNOOZE_ALARM = "com.example.whatsalarm.ACTION_SNOOZE_ALARM"
+        const val EXTRA_NOTIF_TITLE = "extra_notif_title"
+        const val EXTRA_NOTIF_TEXT = "extra_notif_text"
+        const val EXTRA_SNOOZE_MINUTES = "extra_snooze_minutes"
+        const val DEFAULT_SNOOZE_MINUTES = 10
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -28,23 +35,36 @@ class AlarmService : Service() {
         createNotificationChannel()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    private fun pendingFlags(): Int {
+        var flags = PendingIntent.FLAG_UPDATE_CURRENT
+        // Use immutable on modern platforms where appropriate
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags = flags or PendingIntent.FLAG_IMMUTABLE
+        return flags
+    }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            "START_ALARM" -> {
-                if (mediaPlayer != null) return START_STICKY
-                lastKeyword = intent.getStringExtra("keyword")
-                startForeground(NOTIF_ID, buildNotification())
-                startAlarmSound()
+            ACTION_PLAY_ALARM -> {
+                // Start foreground and play
+                val title = intent.getStringExtra(EXTRA_NOTIF_TITLE) ?: "WhatsApp alarm"
+                val text = intent.getStringExtra(EXTRA_NOTIF_TEXT) ?: ""
+                startForegroundWithNotification(title, text)
+                playAlarm()
             }
 
-            "STOP_ALARM" -> {
+            ACTION_STOP_ALARM -> {
                 stopAlarm()
                 stopSelf()
             }
-        }
 
-        return START_STICKY
+            ACTION_SNOOZE_ALARM -> {
+                // Stop playback now, schedule a restart for snooze duration
+                stopAlarm()
+                scheduleSnooze(intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES))
+                stopSelf()
+            }
+        }
+        return START_NOT_STICKY
     }
 
     private fun startAlarmSound() {
@@ -56,16 +76,15 @@ class AlarmService : Service() {
         } ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(applicationContext, uri)
-            setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
+            setDataSource(this@AlarmPlayerService, alarmUri)
+            setAudioAttributes(AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
             )
             isLooping = true
-            setOnPreparedListener { start() }
-            prepareAsync() 
+            setOnPreparedListener { it.start() }
+            prepareAsync()
         }
     }
 
@@ -74,14 +93,16 @@ class AlarmService : Service() {
         mediaPlayer?.release()
         mediaPlayer = null
 
-        getSharedPreferences("settings", MODE_PRIVATE)
-            .edit()
-            .putBoolean("alarm_running", false)
-            .apply()
-
-        stopForeground(true)
+        mediaPlayer?.let {
+            if (it.isPlaying) {
+                try { it.stop() } catch (ignored: Exception) {}
+            }
+            try { it.reset() } catch (ignored: Exception) {}
+            try { it.release() } catch (ignored: Exception) {}
+        }
+        mediaPlayer = null
+        try { stopForeground(true) } catch (ignored: Exception) {}
     }
-
 
     private fun buildNotification(): Notification {
 
@@ -108,6 +129,41 @@ class AlarmService : Service() {
             .build()
     }
 
+    private fun startForegroundWithNotification(title: String, text: String) {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Alarm Player", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Plays alarm sound when a keyword is matched"
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                setSound(null, null)
+            }
+            nm.createNotificationChannel(channel)
+        }
+
+        // Create notification actions that point to the BroadcastReceiver so they work while sleeping.
+        val stopIntent = Intent(this, AlarmActionReceiver::class.java).apply { action = ACTION_STOP_ALARM }
+        val stopPending = PendingIntent.getBroadcast(this, 0, stopIntent, pendingFlags())
+
+        val snoozeIntent = Intent(this, AlarmActionReceiver::class.java).apply {
+            action = ACTION_SNOOZE_ALARM
+            putExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
+        }
+        val snoozePending = PendingIntent.getBroadcast(this, 1, snoozeIntent, pendingFlags())
+
+        val notif = NotificationCompat.Builder(this, channelId)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPending)
+            .addAction(android.R.drawable.ic_media_pause, "Snooze", snoozePending)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+
+        startForeground(NOTIFICATION_ID, notif)
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -121,6 +177,22 @@ class AlarmService : Service() {
 
             getSystemService(NotificationManager::class.java)
                 .createNotificationChannel(channel)
+        }
+    }
+
+    private fun scheduleSnooze(minutes: Int) {
+        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val triggerAt = System.currentTimeMillis() + minutes * 60_000L
+
+        val playIntent = Intent(this, AlarmPlayerService::class.java).apply { action = ACTION_PLAY_ALARM }
+        val pending = PendingIntent.getService(this, 2, playIntent, pendingFlags())
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        } else {
+            am.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
         }
     }
 
