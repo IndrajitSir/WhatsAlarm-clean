@@ -9,6 +9,8 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.app.PendingIntent
+import android.app.AlarmManager
 import androidx.core.app.NotificationCompat
 
 class AlarmService : Service() {
@@ -19,12 +21,13 @@ class AlarmService : Service() {
     companion object {
         const val CHANNEL_ID = "whatsalarm_channel"
         const val NOTIF_ID = 1
-        const val ACTION_PLAY_ALARM = "com.example.whatsalarm.ACTION_PLAY_ALARM"
-        const val ACTION_STOP_ALARM = "com.example.whatsalarm.ACTION_STOP_ALARM"
-        const val ACTION_SNOOZE_ALARM = "com.example.whatsalarm.ACTION_SNOOZE_ALARM"
-        const val EXTRA_NOTIF_TITLE = "extra_notif_title"
-        const val EXTRA_NOTIF_TEXT = "extra_notif_text"
-        const val EXTRA_SNOOZE_MINUTES = "extra_snooze_minutes"
+
+        const val ACTION_START_ALARM = "START_ALARM"
+        const val ACTION_STOP_ALARM = "STOP_ALARM"
+        const val ACTION_SNOOZE_ALARM = "SNOOZE_ALARM"
+
+        const val EXTRA_KEYWORD = "keyword"
+        const val EXTRA_SNOOZE_MINUTES = "snooze_minutes"
         const val DEFAULT_SNOOZE_MINUTES = 10
     }
 
@@ -35,36 +38,34 @@ class AlarmService : Service() {
         createNotificationChannel()
     }
 
-    private fun pendingFlags(): Int {
-        var flags = PendingIntent.FLAG_UPDATE_CURRENT
-        // Use immutable on modern platforms where appropriate
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags = flags or PendingIntent.FLAG_IMMUTABLE
-        return flags
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY_ALARM -> {
-                // Start foreground and play
-                val title = intent.getStringExtra(EXTRA_NOTIF_TITLE) ?: "WhatsApp alarm"
-                val text = intent.getStringExtra(EXTRA_NOTIF_TEXT) ?: ""
-                startForegroundWithNotification(title, text)
-                playAlarm()
+            ACTION_START_ALARM, "START_ALARM" -> {
+                if (mediaPlayer != null) return START_STICKY
+                lastKeyword = intent.getStringExtra(EXTRA_KEYWORD)
+                // mark alarm running
+                getSharedPreferences("settings", MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("alarm_running", true)
+                    .apply()
+                startForeground(NOTIF_ID, buildNotification())
+                startAlarmSound()
             }
 
-            ACTION_STOP_ALARM -> {
+            ACTION_STOP_ALARM, "STOP_ALARM" -> {
                 stopAlarm()
                 stopSelf()
             }
 
-            ACTION_SNOOZE_ALARM -> {
-                // Stop playback now, schedule a restart for snooze duration
+            ACTION_SNOOZE_ALARM, "SNOOZE_ALARM" -> {
+                val mins = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
                 stopAlarm()
-                scheduleSnooze(intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES))
+                scheduleSnooze(mins)
                 stopSelf()
             }
         }
-        return START_NOT_STICKY
+
+        return START_STICKY
     }
 
     private fun startAlarmSound() {
@@ -76,32 +77,34 @@ class AlarmService : Service() {
         } ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(this@AlarmPlayerService, alarmUri)
-            setAudioAttributes(AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
+            setDataSource(applicationContext, uri)
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
             )
             isLooping = true
-            setOnPreparedListener { it.start() }
+            setOnPreparedListener { start() }
             prepareAsync()
         }
     }
 
     private fun stopAlarm() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
+        try {
+            mediaPlayer?.stop()
+        } catch (_: Exception) {}
+        try {
+            mediaPlayer?.release()
+        } catch (_: Exception) {}
         mediaPlayer = null
 
-        mediaPlayer?.let {
-            if (it.isPlaying) {
-                try { it.stop() } catch (ignored: Exception) {}
-            }
-            try { it.reset() } catch (ignored: Exception) {}
-            try { it.release() } catch (ignored: Exception) {}
-        }
-        mediaPlayer = null
-        try { stopForeground(true) } catch (ignored: Exception) {}
+        getSharedPreferences("settings", MODE_PRIVATE)
+            .edit()
+            .putBoolean("alarm_running", false)
+            .apply()
+
+        try { stopForeground(true) } catch (_: Exception) {}
     }
 
     private fun buildNotification(): Notification {
@@ -115,7 +118,28 @@ class AlarmService : Service() {
             this,
             0,
             popupIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        // Broadcast PendingIntents for Stop & Snooze (so they work from lock screen / while sleeping)
+        val stopIntent = Intent(this, AlarmActionReceiver::class.java).apply { action = ACTION_STOP_ALARM }
+        val snoozeIntent = Intent(this, AlarmActionReceiver::class.java).apply {
+            action = ACTION_SNOOZE_ALARM
+            putExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
+        }
+
+        val stopPending = PendingIntent.getBroadcast(
+            this,
+            1,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        val snoozePending = PendingIntent.getBroadcast(
+            this,
+            2,
+            snoozeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -126,42 +150,31 @@ class AlarmService : Service() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPending)
+            .addAction(android.R.drawable.ic_media_pause, "Snooze", snoozePending)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
     }
 
-    private fun startForegroundWithNotification(title: String, text: String) {
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Alarm Player", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Plays alarm sound when a keyword is matched"
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                setSound(null, null)
-            }
-            nm.createNotificationChannel(channel)
+    private fun scheduleSnooze(minutes: Int) {
+        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val triggerAt = System.currentTimeMillis() + minutes * 60_000L
+
+        val playIntent = Intent(this, AlarmService::class.java).apply { action = ACTION_START_ALARM }
+        val pending = PendingIntent.getService(
+            this,
+            3,
+            playIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        } else {
+            am.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
         }
-
-        // Create notification actions that point to the BroadcastReceiver so they work while sleeping.
-        val stopIntent = Intent(this, AlarmActionReceiver::class.java).apply { action = ACTION_STOP_ALARM }
-        val stopPending = PendingIntent.getBroadcast(this, 0, stopIntent, pendingFlags())
-
-        val snoozeIntent = Intent(this, AlarmActionReceiver::class.java).apply {
-            action = ACTION_SNOOZE_ALARM
-            putExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
-        }
-        val snoozePending = PendingIntent.getBroadcast(this, 1, snoozeIntent, pendingFlags())
-
-        val notif = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setOngoing(true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPending)
-            .addAction(android.R.drawable.ic_media_pause, "Snooze", snoozePending)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
-
-        startForeground(NOTIFICATION_ID, notif)
     }
 
     private fun createNotificationChannel() {
@@ -177,22 +190,6 @@ class AlarmService : Service() {
 
             getSystemService(NotificationManager::class.java)
                 .createNotificationChannel(channel)
-        }
-    }
-
-    private fun scheduleSnooze(minutes: Int) {
-        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val triggerAt = System.currentTimeMillis() + minutes * 60_000L
-
-        val playIntent = Intent(this, AlarmPlayerService::class.java).apply { action = ACTION_PLAY_ALARM }
-        val pending = PendingIntent.getService(this, 2, playIntent, pendingFlags())
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pending)
-        } else {
-            am.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
         }
     }
 
