@@ -1,14 +1,19 @@
 package com.example.whatsalarm
 
 import android.app.Notification
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
 
+/**
+ * Notification listener that watches WhatsApp notifications and starts AlarmService
+ * when a configured keyword is matched.
+ *
+ * This version uses AlarmService.ACTION_START_ALARM (not AlarmPlayerService) and honors
+ * the "enabled" and "alarm_running" preferences.
+ */
 class WhatsAppListener : NotificationListenerService() {
 
     private val whatsappPackages = setOf("com.whatsapp", "com.whatsapp.w4b")
@@ -21,6 +26,12 @@ class WhatsAppListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName ?: return
         if (!whatsappPackages.contains(pkg)) return
+
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+
+        // Master toggle + running guard
+        if (!prefs.getBoolean("enabled", true)) return
+        if (prefs.getBoolean("alarm_running", false)) return
 
         val notif = sbn.notification ?: return
         val extras = notif.extras
@@ -40,7 +51,6 @@ class WhatsAppListener : NotificationListenerService() {
         // Try MessagingStyle (if present)
         val messagingText = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notif)
             ?.let { style ->
-                // join recent messages
                 val sb = StringBuilder()
                 for (m in style.messages) {
                     sb.append(m.text).append(' ')
@@ -49,23 +59,35 @@ class WhatsAppListener : NotificationListenerService() {
             }
         messagingText?.let { if (it.isNotBlank()) textCandidates.add(it) }
 
-        // Final body to check: join with spaces
         val body = textCandidates.joinToString(" ").trim()
         if (body.isBlank()) return
 
-        // Keyword matching: simple contains; replace with regex if you want word boundaries etc.
-        val keywords = listOf("alarm me", "ring me", "urgent", "wake me") // update to your keywords
-        val match = keywords.any { keyword -> body.contains(keyword, ignoreCase = true) }
+        // Load keywords from prefs (comma-separated)
+        val keywords = prefs.getString("keywords", "")!!
+            .split(",")
+            .map { it.trim().lowercase() }
+            .filter { it.isNotEmpty() }
 
-        if (match) {
-            // Start the alarm player service (foreground). Include small context.
-            val intent = Intent(this, AlarmPlayerService::class.java).apply {
-                action = AlarmPlayerService.ACTION_PLAY_ALARM
-                putExtra(AlarmPlayerService.EXTRA_NOTIF_TITLE, extras.getCharSequence(Notification.EXTRA_TITLE)?.toString())
-                putExtra(AlarmPlayerService.EXTRA_NOTIF_TEXT, body)
-                // Put other metadata if needed (package, time, etc.)
+        if (keywords.isEmpty()) return
+
+        // Check for match and find the first keyword matched
+        var matchedKeyword: String? = null
+        loop@ for (text in textCandidates) {
+            for (keyword in keywords) {
+                if (text.contains(keyword, ignoreCase = true)) {
+                    matchedKeyword = keyword
+                    break@loop
+                }
             }
-            // Use startForegroundService on O+ to ensure it starts.
+        }
+
+        // Trigger AlarmService if a keyword matched
+        matchedKeyword?.let { kw ->
+            val intent = Intent(this, AlarmService::class.java).apply {
+                action = AlarmService.ACTION_START_ALARM
+                putExtra(AlarmService.EXTRA_KEYWORD, kw)
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(intent)
             } else {
