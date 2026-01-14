@@ -5,6 +5,7 @@
     <!-- BIND_NOTIFICATION_LISTENER_SERVICE is declared on the service element below, no need to also "use" it here -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
         android:allowBackup="true"
@@ -45,7 +46,7 @@
         <service
             android:name=".AlarmService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback|connectedDevice" />
+            android:foregroundServiceType="mediaPlayback" />
 
         <!-- Receiver for notification actions (Stop / Snooze) -->
         <receiver
