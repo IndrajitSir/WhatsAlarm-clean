@@ -19,12 +19,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+
+                requestPermissions(
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    200
+                )
+            }
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         // ----- INITIAL UI VALUES -----
         binding.switchEnable.isChecked = prefs.getBoolean("enabled", true)
-        binding.keywords.setText(prefs.getString("keywords", "good morning,meeting,urgent"))
+        binding.keywords.setText(prefs.getString("keywords", "good morning"))
 
         // ----- TOGGLE ON/OFF -----
         binding.switchEnable.setOnCheckedChangeListener { _, value ->
@@ -65,6 +76,13 @@ class MainActivity : AppCompatActivity() {
                 prefs.edit().putString("alarmTone", it.toString()).apply()
                 Toast.makeText(this, "Ringtone updated ✅", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    override fun onRequestPermissionsResult( requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 200 && (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED)) {
+            Toast.makeText( this, "Notification permission denied Popup won't work",Toast.LENGTH_LONG).show()
         }
     }
 }

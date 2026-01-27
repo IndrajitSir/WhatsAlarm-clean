@@ -13,6 +13,7 @@ import android.app.PendingIntent
 import android.app.AlarmManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import android.app.Service
 
 class AlarmService : Service() {
 
@@ -25,7 +26,7 @@ class AlarmService : Service() {
         const val NOTIF_ID = 1
 
         const val ACTION_START_ALARM = "START_ALARM"
-        const val ACTION_STOP_ALARM = "STOP_ALARM"
+        const val ACTION_STOP_ALARM = "com.example.whatsalarm.ACTION_STOP"
         const val ACTION_SNOOZE_ALARM = "SNOOZE_ALARM"
 
         const val EXTRA_KEYWORD = "keyword"
@@ -46,7 +47,6 @@ class AlarmService : Service() {
                 ACTION_START_ALARM, "START_ALARM" -> {
                     if (mediaPlayer != null) return START_STICKY
                     lastKeyword = intent.getStringExtra(EXTRA_KEYWORD)
-                    // mark alarm running
                     getSharedPreferences("settings", MODE_PRIVATE)
                         .edit()
                         .putBoolean("alarm_running", true)
@@ -69,14 +69,13 @@ class AlarmService : Service() {
             }
         } catch (t: Throwable) {
             Log.e(TAG, "Unhandled error in onStartCommand", t)
-            // Ensure we clear running flag to avoid stuck state
             getSharedPreferences("settings", MODE_PRIVATE)
                 .edit()
                 .putBoolean("alarm_running", false)
                 .apply()
+            try { stopForeground(true) } catch (_: Exception) {}
             stopSelf()
         }
-
         return START_STICKY
     }
 
@@ -96,16 +95,15 @@ class AlarmService : Service() {
                     try { mp.reset() } catch (_: Exception) {}
                     try { mp.release() } catch (_: Exception) {}
                     mediaPlayer = null
-                    // Clear running flag
                     getSharedPreferences("settings", MODE_PRIVATE)
                         .edit()
                         .putBoolean("alarm_running", false)
                         .apply()
+                    try { stopForeground(true) } catch (_: Exception) {}
                     stopSelf()
                     true
                 }
 
-                // setDataSource and prepare can throw; wrap them
                 try {
                     setDataSource(applicationContext, uri)
                     setAudioAttributes(
@@ -122,12 +120,10 @@ class AlarmService : Service() {
                     try { reset() } catch (_: Exception) {}
                     try { release() } catch (_: Exception) {}
                     mediaPlayer = null
-                    // Clear running flag
                     getSharedPreferences("settings", MODE_PRIVATE)
                         .edit()
                         .putBoolean("alarm_running", false)
                         .apply()
-                    // stop foreground/stop service
                     try { stopForeground(true) } catch (_: Exception) {}
                     stopSelf()
                 }
@@ -183,26 +179,17 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         )
 
-        // Broadcast PendingIntents for Stop & Snooze (so they work from lock screen / while sleeping)
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+
+        // Stop and Snooze actions (broadcast intents)
         val stopIntent = Intent(this, AlarmActionReceiver::class.java).apply { action = ACTION_STOP_ALARM }
         val snoozeIntent = Intent(this, AlarmActionReceiver::class.java).apply {
             action = ACTION_SNOOZE_ALARM
             putExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
         }
 
-        val stopPending = PendingIntent.getBroadcast(
-            this,
-            1,
-            stopIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
-
-        val snoozePending = PendingIntent.getBroadcast(
-            this,
-            2,
-            snoozeIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
+        val stopPending = PendingIntent.getBroadcast(this, 1, stopIntent, flags)
+        val snoozePending = PendingIntent.getBroadcast(this, 2, snoozeIntent, flags)
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
@@ -215,6 +202,7 @@ class AlarmService : Service() {
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPending)
             .addAction(android.R.drawable.ic_media_pause, "Snooze", snoozePending)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setDefaults(Notification.DEFAULT_ALL)
             .build()
     }
 
@@ -245,23 +233,30 @@ class AlarmService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "WhatsAlarm Alerts",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Alarm notifications for WhatsAlarm"
+                setSound(alarmSound, audioAttributes)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 1000, 500, 1000)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
 
-            try {
-                getSystemService(NotificationManager::class.java)
-                    .createNotificationChannel(channel)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to create notification channel", e)
-            }
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(channel)
         }
     }
+
 
     override fun onDestroy() {
         stopAlarm()

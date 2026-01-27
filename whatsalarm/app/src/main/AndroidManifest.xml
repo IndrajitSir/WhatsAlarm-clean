@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permissions -->
-    <!-- BIND_NOTIFICATION_LISTENER_SERVICE is declared on the service element below, no need to also "use" it here -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Required permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:allowBackup="true"
@@ -15,7 +16,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar">
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -25,10 +25,10 @@
             </intent-filter>
         </activity>
 
-        <!-- Alarm Popup Activity -->
         <activity
             android:name=".AlarmPopupActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:launchMode="singleTask"
             android:exported="false" />
 
         <!-- Notification Listener -->
@@ -42,13 +42,13 @@
             </intent-filter>
         </service>
 
-        <!-- Alarm Service -->
+        <!-- Alarm Service (media playback only) -->
         <service
             android:name=".AlarmService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback|alarm" />
 
-        <!-- Receiver for notification actions (Stop / Snooze) -->
+        <!-- Receiver for notification actions -->
         <receiver
             android:name=".AlarmActionReceiver"
             android:exported="false" />
