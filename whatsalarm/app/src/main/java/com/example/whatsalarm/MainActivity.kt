@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import android.os.Build
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import com.example.whatsalarm.databinding.ActivityMainBinding
 import java.util.*
