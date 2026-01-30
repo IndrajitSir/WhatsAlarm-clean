@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_permission_card"
+    android:padding="16dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <!-- Icon -->
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:src="@drawable/ic_notification"
+        app:tint="@color/accent" />
+
+    <!-- Text Section -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/title"
+            android:text="Notification Permission"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/textPrimary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/desc"
+            android:text="For instant alerts"
+            android:textSize="13sp"
+            android:textColor="@color/textSecondary"
+            android:layout_marginTop="2dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <!-- STATUS (NEW) -->
+        <TextView
+            android:id="@+id/statusText"
+            android:text="Permission Required"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/warning"
+            android:layout_marginTop="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- Grant Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGrant"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:text="Grant"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/accent" />
+
+</LinearLayout>
