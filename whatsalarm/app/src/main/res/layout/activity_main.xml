@@ -1,85 +1,218 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="@color/bg"
+    android:padding="20dp">
 
+    <!-- SINGLE ROOT CHILD -->
     <LinearLayout
-        android:orientation="vertical"
-        android:padding="16dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <!-- App Title -->
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="WhatsAlarm"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginBottom="16dp"/>
+        <!-- Dark Mode Card -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:radius="20dp"
+        android:elevation="6dp"
+        android:layout_marginBottom="16dp">
 
-        <!-- Enable WhatsAlarm -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:padding="12dp"
             android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
+            android:background="@drawable/bg_card">
 
             <TextView
+                android:text="Dark Mode"
+                android:textColor="@color/text_primary"
+                android:layout_weight="1"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Enable Alerts"
-                android:textSize="16sp"
-                android:layout_weight="1"/>
+                android:layout_height="wrap_content"/>
 
             <Switch
-                android:id="@+id/switchEnable"
+                android:id="@+id/switchTheme"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
+
+            <ImageView
+                android:id="@+id/btnSettings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_settings"
+                android:tint="@color/accent"
+                android:background="?attr/selectableItemBackgroundBorderless"/>
+
         </LinearLayout>
 
-        <!-- Keywords -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Keywords (comma separated)"
-            android:paddingTop="8dp"
-            android:textSize="16sp"
-            android:textStyle="bold"/>
+    </androidx.cardview.widget.CardView>
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/keywords"
+        <!-- Main Content -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="good morning, urgent, meeting"
-            android:inputType="text"/>
+            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/saveBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Save"
-            android:layout_marginTop="8dp"/>
+            <!-- Title -->
+            <TextView
+                android:id="@+id/tvTitle"
+                android:text="AlertifyX"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
 
-        <!-- Notification Access -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnOpenNotifAccess"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Open Notification Access"
-            android:layout_marginTop="12dp"/>
+            <TextView
+                android:text="Control your priority alerts"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="24dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
 
-        <!-- Ringtone Picker -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnChooseRingtone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Choose Alarm Ringtone"
-            android:layout_marginTop="12dp"/>
+            <!-- Enable Alerts Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:radius="20dp"
+                android:elevation="6dp"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:padding="20dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:text="Enable Alerts"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_weight="1"
+                        android:textColor="@color/text_primary"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"/>
+
+                    <Switch
+                        android:id="@+id/switchEnable"
+                        android:thumbTint="@color/primary"
+                        android:trackTint="@color/primary_light"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Keywords -->
+            <TextView
+                android:text="KEYWORDS (comma separated)"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="8dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:boxBackgroundMode="outline"
+                app:boxCornerRadiusTopStart="20dp"
+                app:boxCornerRadiusTopEnd="20dp"
+                app:boxCornerRadiusBottomStart="20dp"
+                app:boxCornerRadiusBottomEnd="20dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/keywords"
+                    android:hint="Add more keywords..."
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Action Cards -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/btnOpenNotifAccess"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:radius="20dp"
+                    android:elevation="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:layout_width="0dp"
+                    android:layout_height="120dp">
+
+                    <TextView
+                        android:gravity="center"
+                        android:text="Notification Access"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"/>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/btnChooseRingtone"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:radius="20dp"
+                    android:elevation="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:layout_width="0dp"
+                    android:layout_height="120dp">
+
+                    <TextView
+                        android:gravity="center"
+                        android:text="Alarm Ringtone"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"/>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <!-- Save Button -->
+            <Button
+                android:id="@+id/saveBtn"
+                android:text="Save Configuration"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:backgroundTint="@color/primary"
+                android:textColor="@android:color/white"
+                android:layout_marginTop="30dp"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"/>
+
+            <TextView
+                android:text="Version 2.4.0 • Built with precision"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="center"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
