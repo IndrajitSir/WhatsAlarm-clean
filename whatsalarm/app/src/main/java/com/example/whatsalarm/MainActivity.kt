@@ -21,6 +21,7 @@ import com.example.whatsalarm.ui.utils.ThemeHelper
 import com.example.whatsalarm.ui.utils.animateClick
 import com.example.whatsalarm.ui.utils.hideKeyboard
 import com.google.android.material.chip.Chip
+import androidx.core.content.ContextCompat;
 
 class MainActivity : AppCompatActivity() {
 
