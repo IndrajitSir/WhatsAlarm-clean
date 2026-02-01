@@ -60,8 +60,19 @@ class MainActivity : AppCompatActivity() {
         setupKeywordInput()
         setupActionButtons()
         
-        // Initial data restoration
-        loadStoredData()
+        // Data restoration: Priority to savedInstanceState (for theme recreation)
+        if (savedInstanceState != null) {
+            val restoredKeywords = savedInstanceState.getStringArrayList("temp_keywords")
+            restoredKeywords?.let { setKeywords(it) }
+        } else {
+            loadStoredData()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val currentKeywords = ArrayList(getKeywords())
+        outState.putStringArrayList("temp_keywords", currentKeywords)
     }
 
     private fun setupThemeToggle() {
