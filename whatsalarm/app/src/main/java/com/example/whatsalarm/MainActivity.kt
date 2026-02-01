@@ -110,15 +110,11 @@ class MainActivity : AppCompatActivity() {
 
         // Open app settings
         binding.btnSettings.setOnClickListener {
-            try {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", packageName, null)
-                }
-                startActivity(intent)
-            } catch (e: Exception) {
-                val intent = Intent(this, Settings::class.java)
-                startActivity(intent)
+            it.animateClick()
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", packageName, null)
             }
+            startActivity(intent)
         }
     }
 

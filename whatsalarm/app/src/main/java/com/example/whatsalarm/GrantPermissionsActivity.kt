@@ -21,50 +21,53 @@ class GrantPermissionsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityPermissionBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupNotificationPermission()
-        setupPopupPermission()
-        setupNotificationAccess()
+        setupClickListeners()
     }
 
-    private fun setupNotificationPermission() {
-
-        binding.cardNotification.btnGrant.setOnClickListener { view ->
-            view.animateClick()
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                requestPermissions(
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    REQ_NOTIFICATION
-                )
+    private fun setupClickListeners() {
+        // Notification Permission card
+        binding.cardNotification.apply {
+            title.text = "Notification Permission"
+            desc.text = "For instant alerts & ringtones"
+            icon.setImageResource(R.drawable.ic_notification)
+            btnGrant.setOnClickListener { view ->
+                view.animateClick()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    requestPermissions(
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        REQ_NOTIFICATION
+                    )
+                }
             }
         }
-    }
 
-    private fun setupPopupPermission() {
-
-        binding.cardPopup.btnGrant.setOnClickListener { view ->
-            view.animateClick()
-
-            val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
-            )
-            startActivity(intent)
+        // Popup / Overlay card
+        binding.cardPopup.apply {
+            title.text = "Overlay Permission"
+            desc.text = "To show alarm popup on screen"
+            icon.setImageResource(R.drawable.ic_popup)
+            btnGrant.setOnClickListener { view ->
+                view.animateClick()
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            }
         }
-    }
 
-    private fun setupNotificationAccess() {
-
-        binding.cardNotifAccess.btnGrant.setOnClickListener { view ->
-            view.animateClick()
-
-            startActivity(
-                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-            )
+        // Notification Access card
+        binding.cardNotifAccess.apply {
+            title.text = "Notification Access"
+            desc.text = "To detect incoming messages"
+            icon.setImageResource(R.drawable.ic_access)
+            btnGrant.setOnClickListener { view ->
+                view.animateClick()
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
         }
     }
 
@@ -82,60 +85,37 @@ class GrantPermissionsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateUI()
-        checkAndContinue()
+        refreshStates()
     }
 
-    private fun updateUI() {
+    private fun refreshStates() {
+        // 1. Notification Permission
+        val notifPermissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-        // -------- Notification permission
-        val notifPermissionGranted =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                    ContextCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
+        updateCardState(binding.cardNotification, notifPermissionGranted)
 
-        binding.cardNotification.statusText.text =
-            if (notifPermissionGranted) "Granted ✅" else "Required"
-
-        binding.cardNotification.btnGrant.isEnabled =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notifPermissionGranted
-
-
-        // -------- Overlay permission
+        // 2. Overlay Permission
         val overlayGranted = isOverlayGranted(this)
+        updateCardState(binding.cardPopup, overlayGranted)
 
-        binding.cardPopup.statusText.text =
-            if (overlayGranted) "Granted ✅" else "Required"
-
-        binding.cardPopup.btnGrant.isEnabled = !overlayGranted
-
-
-        // -------- Notification listener
+        // 3. Notification Access
         val notifAccessGranted = isNotificationAccessGranted(this)
+        updateCardState(binding.cardNotifAccess, notifAccessGranted)
 
-        binding.cardNotifAccess.statusText.text =
-            if (notifAccessGranted) "Granted ✅" else "Required"
-
-        binding.cardNotifAccess.btnGrant.isEnabled = !notifAccessGranted
-    }
-
-    private fun checkAndContinue() {
-
-        val notifPermissionGranted =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                    ContextCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
-
-        val overlayGranted = isOverlayGranted(this)
-        val notifAccessGranted = isNotificationAccessGranted(this)
-
+        // Auto-navigate if all granted
         if (notifPermissionGranted && overlayGranted && notifAccessGranted) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }
+    }
+
+    private fun updateCardState(itemBinding: com.example.whatsalarm.databinding.ItemPermissionBinding, isGranted: Boolean) {
+        itemBinding.statusText.text = if (isGranted) "Granted ✅" else "Required"
+        itemBinding.statusText.setTextColor(
+            ContextCompat.getColor(this, if (isGranted) R.color.accent else R.color.warning)
+        )
+        itemBinding.btnGrant.isEnabled = !isGranted
+        itemBinding.btnGrant.alpha = if (isGranted) 0.5f else 1.0f
     }
 }

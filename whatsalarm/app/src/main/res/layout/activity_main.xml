@@ -68,16 +68,17 @@
                 android:textSize="28sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
-                android:layout_gravity="center"
-                android:layout_width="wrap_content"
+                android:gravity="center"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
             <TextView
                 android:text="Control your priority alerts"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
+                android:gravity="center"
                 android:layout_marginBottom="24dp"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
             <!-- Enable Alerts Card -->
