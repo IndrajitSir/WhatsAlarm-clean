@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#F4F6F8</color>
-    <color name="bg_dark">#0E1B22</color>
-    <color name="textPrimary">#1A1A1A</color>
-    <color name="textSecondary">#6B7280</color>
-    <color name="accent">#18A0FB</color>
-    <color name="cardBg">#FFFFFF</color>
-    <color name="primary">#5C6BC0</color>        
-    <color name="primary_light">#8E99F3</color>
-    <color name="background_dark">#121212</color>
-    <color name="background_light">#FFFFFF</color>
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#B0B0B0</color>
-    <color name="warning">#FFA000</color>
+    <!-- LIGHT MODE PALETTE -->
+    <color name="md_theme_light_primary">#6750A4</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_secondary">#625B71</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_surface">#FEF7FF</color>
+    <color name="md_theme_light_onSurface">#1D1B20</color>
+    <color name="md_theme_light_surfaceVariant">#E7E0EC</color>
+    <color name="md_theme_light_onSurfaceVariant">#49454F</color>
+    <color name="md_theme_light_background">#FEF7FF</color>
+    <color name="md_theme_light_outline">#79747E</color>
+    <color name="md_theme_light_error">#B3261E</color>
+
+    <!-- Legacy / Accessory colors -->
+    <color name="accent">#6750A4</color>
+    <color name="warning">#B3261E</color>
 </resources>

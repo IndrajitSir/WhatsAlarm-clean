@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,59 +8,61 @@
     android:orientation="horizontal"
     android:gravity="center_vertical">
 
-        <!-- Icon -->
-        <ImageView
-            android:id="@+id/icon"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@drawable/ic_notification"
-            app:tint="@color/accent" />
+    <!-- Icon -->
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_notification"
+        app:tint="?attr/colorPrimary"
+        android:background="@drawable/bg_icon_rounded"/>
 
-        <!-- Text Section -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:orientation="vertical">
+    <!-- Text Section -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/title"
-                android:text="Notification Permission"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-            <TextView
-                android:id="@+id/desc"
-                android:text="For instant alerts"
-                android:textSize="13sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginTop="2dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-            <TextView
-                android:id="@+id/statusText"
-                android:text="Permission Required"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/warning"
-                android:layout_marginTop="4dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGrant"
+        <TextView
+            android:id="@+id/title"
+            android:text="Permission Title"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="Grant"
-            android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            style="@style/Widget.MaterialComponents.Button"
-            app:cornerRadius="8dp"
-            app:backgroundTint="@color/accent" />
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/desc"
+            android:text="Description goes here"
+            android:textSize="13sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="2dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:text="Required"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorError"
+            android:layout_marginTop="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGrant"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:text="Grant"
+        android:textAllCaps="false"
+        android:textColor="?attr/colorOnPrimary"
+        style="@style/Widget.Material3.Button.TonalButton"
+        app:cornerRadius="12dp"
+        app:backgroundTint="?attr/colorPrimary" />
+</LinearLayout>

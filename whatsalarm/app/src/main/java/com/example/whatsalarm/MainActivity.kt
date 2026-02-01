@@ -2,23 +2,25 @@ package com.example.whatsalarm
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.KeyEvent
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
-import android.content.pm.PackageManager
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
 import com.example.whatsalarm.databinding.ActivityMainBinding
-import androidx.appcompat.app.AppCompatDelegate
-import android.view.animation.AnimationUtils
-import com.example.whatsalarm.R
+import com.example.whatsalarm.ui.utils.ThemeHelper
 import com.example.whatsalarm.ui.utils.animateClick
 import com.example.whatsalarm.ui.utils.hideKeyboard
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.ActivityResult
+import com.google.android.material.chip.Chip
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,14 +39,8 @@ class MainActivity : AppCompatActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeHelper.applyTheme(this)
         super.onCreate(savedInstanceState)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 200)
-            }
-        }
 
         // FIRST LAUNCH CHECK
         val firstLaunch = prefs.getBoolean("first_launch", true)
@@ -58,57 +54,101 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val isDark = prefs.getBoolean("dark_mode", false)
-        binding.switchTheme.isChecked = isDark
+        setupThemeToggle()
+        setupAlertsToggle()
+        setupKeywordInput()
+        setupActionButtons()
+        
+        // Initial data restoration
+        loadStoredData()
+    }
 
-        AppCompatDelegate.setDefaultNightMode(
-            if (isDark) AppCompatDelegate.MODE_NIGHT_YES
-            else AppCompatDelegate.MODE_NIGHT_NO
-        )
+    private fun setupThemeToggle() {
+        binding.switchTheme.isChecked = ThemeHelper.isDarkMode(this)
+        binding.switchTheme.setOnCheckedChangeListener { _, isChecked ->
+            ThemeHelper.toggleDarkMode(this, isChecked)
+            // Recreate to apply theme changes immediately
+            recreate()
+        }
+    }
 
-        binding.root.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_in))
-
-        // Enable switch
-        binding.switchEnable.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+    private fun setupAlertsToggle() {
         binding.switchEnable.isChecked = prefs.getBoolean("enabled", true)
         binding.switchEnable.setOnCheckedChangeListener { _, value ->
             prefs.edit().putBoolean("enabled", value).apply()
         }
+    }
 
-        // Initial UI values
-        binding.keywords.setText(prefs.getString("keywords", "good morning"))
-
-        // Save keywords
-        binding.saveBtn.setOnClickListener {
-            prefs.edit().putString("keywords", binding.keywords.text.toString()).apply()
-            it.hideKeyboard()
-            Toast.makeText(this, "Keywords saved ✅", Toast.LENGTH_SHORT).show()
-            binding.saveBtn.text = "Saved!"
-            it.animateClick()
-            binding.saveBtn.postDelayed({ binding.saveBtn.text = "Save" }, 1500)
+    private fun setupKeywordInput() {
+        binding.keywordInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                addKeywordFromInput()
+                true
+            } else false
         }
 
-        // Open notification access
+        binding.keywordInput.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_SPACE || keyCode == KeyEvent.KEYCODE_COMMA)) {
+                addKeywordFromInput()
+                true
+            } else false
+        }
+
+        binding.keywordInput.doAfterTextChanged { text ->
+            if (text?.endsWith(",") == true || text?.endsWith(" ") == true) {
+                addKeywordFromInput()
+            }
+        }
+    }
+
+    private fun addKeywordFromInput() {
+        val raw = binding.keywordInput.text.toString().trim().replace(",", "")
+        if (raw.isNotEmpty()) {
+            addChip(raw)
+            binding.keywordInput.setText("")
+            updateKeywordCount()
+        }
+    }
+
+    private fun addChip(text: String) {
+        // Avoid duplicates
+        if (getKeywords().contains(text)) return
+
+        val chip = Chip(this).apply {
+            this.text = text
+            isCloseIconVisible = true
+            setOnCloseIconClickListener {
+                binding.keywordChipGroup.removeView(this)
+                updateKeywordCount()
+            }
+            // Material 3 Styling
+            setChipBackgroundColorResource(R.color.md_theme_light_surfaceVariant)
+            setTextColor(ContextCompat.getColor(context, R.color.md_theme_light_onSurfaceVariant))
+            setCloseIconTintResource(R.color.md_theme_light_onSurfaceVariant)
+        }
+        binding.keywordChipGroup.addView(chip)
+    }
+
+    private fun updateKeywordCount() {
+        binding.tvActiveKeywordCount.text = "${binding.keywordChipGroup.childCount} active"
+    }
+
+    private fun setupActionButtons() {
         binding.btnOpenNotifAccess.setOnClickListener {
             it.animateClick()
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
 
-        // Choose ringtone (Activity Result API)
         binding.btnChooseRingtone.setOnClickListener {
             it.animateClick()
             val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
                 putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
                 putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Alarm Tone")
-                putExtra(
-                    RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
-                    prefs.getString("alarmTone", null)?.let { Uri.parse(it) }
-                )
+                putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, prefs.getString("alarmTone", null)?.let { Uri.parse(it) })
             }
             ringtonePicker.launch(intent)
         }
 
-        // Open app settings
         binding.btnSettings.setOnClickListener {
             it.animateClick()
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -116,16 +156,39 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         }
+
+        binding.saveBtn.setOnClickListener {
+            val keywords = getKeywords()
+            prefs.edit().putString("keywords", keywords.joinToString(",")).apply()
+            it.hideKeyboard()
+            Toast.makeText(this, "Configuration saved ✅", Toast.LENGTH_SHORT).show()
+            binding.saveBtn.text = "Saved!"
+            it.animateClick()
+            binding.saveBtn.postDelayed({ binding.saveBtn.text = "Save Configuration" }, 1500)
+        }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 200 && (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED)) {
-            // Optionally show a Toast here
+    private fun loadStoredData() {
+        val storedKeywords = prefs.getString("keywords", "urgent, help") ?: ""
+        if (storedKeywords.isNotEmpty()) {
+            setKeywords(storedKeywords.split(",").map { it.trim() })
         }
+        updateKeywordCount()
+    }
+
+    // Exposed API for keyword management
+    fun getKeywords(): List<String> {
+        val keywords = mutableListOf<String>()
+        for (i in 0 until binding.keywordChipGroup.childCount) {
+            val chip = binding.keywordChipGroup.getChildAt(i) as? Chip
+            chip?.let { keywords.add(it.text.toString()) }
+        }
+        return keywords
+    }
+
+    fun setKeywords(list: List<String>) {
+        binding.keywordChipGroup.removeAllViews()
+        list.forEach { addChip(it) }
+        updateKeywordCount()
     }
 }

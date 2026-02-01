@@ -2,218 +2,308 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg"
-    android:padding="20dp">
+    android:background="?attr/android:windowBackground"
+    android:fillViewport="true">
 
-    <!-- SINGLE ROOT CHILD -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <!-- Dark Mode Card -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="6dp"
-        android:layout_marginBottom="16dp">
+        <!-- Dark Mode & Settings Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutline"
+            android:layout_marginBottom="24dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical"
+                android:background="?attr/colorSurface">
+
+                <TextView
+                    android:text="Dark Mode"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"/>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchTheme"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"/>
+
+                <ImageView
+                    android:id="@+id/btnSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_settings"
+                    app:tint="?attr/colorPrimary"
+                    android:background="?attr/selectableItemBackgroundBorderless"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Main Title -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:text="WhatsAlarm"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"/>
+
+        <TextView
+            android:text="Control your priority alerts"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Enable Alerts Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutline"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical"
+                android:background="?attr/colorSurface">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_notification"
+                    app:tint="?attr/colorPrimary"
+                    android:background="@drawable/bg_icon_rounded"
+                    android:layout_marginEnd="16dp"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:text="Enable Alerts"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:text="System will monitor incoming pings"
+                        android:textSize="13sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchEnable"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Keywords Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="12dp"
-            android:gravity="center_vertical"
-            android:background="@drawable/bg_card">
-
+            android:layout_marginBottom="8dp">
             <TextView
-                android:text="Dark Mode"
-                android:textColor="@color/text_primary"
+                android:text="KEYWORDS (COMMA SEPARATED)"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"/>
-
-            <Switch
-                android:id="@+id/switchTheme"
+            <TextView
+                android:id="@+id/tvActiveKeywordCount"
+                android:text="0 active"
+                android:textSize="12sp"
+                android:textColor="?attr/colorPrimary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
-
-            <ImageView
-                android:id="@+id/btnSettings"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:padding="8dp"
-                android:src="@drawable/ic_settings"
-                android:tint="@color/accent"
-                android:background="?attr/selectableItemBackgroundBorderless"/>
-
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
-
-        <!-- Main Content -->
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutline"
+            android:layout_marginBottom="24dp">
 
-            <!-- Title -->
-            <TextView
-                android:id="@+id/tvTitle"
-                android:text="AlertifyX"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
-            <TextView
-                android:text="Control your priority alerts"
-                android:textSize="14sp"
-                android:textColor="@color/text_secondary"
-                android:gravity="center"
-                android:layout_marginBottom="24dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
-            <!-- Enable Alerts Card -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:radius="20dp"
-                android:elevation="6dp"
-                android:layout_marginBottom="20dp">
-
-                <LinearLayout
-                    android:padding="20dp"
-                    android:gravity="center_vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:text="Enable Alerts"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:layout_weight="1"
-                        android:textColor="@color/text_primary"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"/>
-
-                    <Switch
-                        android:id="@+id/switchEnable"
-                        android:thumbTint="@color/primary"
-                        android:trackTint="@color/primary_light"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Keywords -->
-            <TextView
-                android:text="KEYWORDS (comma separated)"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_secondary"
-                android:layout_marginBottom="8dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:boxBackgroundMode="outline"
-                app:boxCornerRadiusTopStart="20dp"
-                app:boxCornerRadiusTopEnd="20dp"
-                app:boxCornerRadiusBottomStart="20dp"
-                app:boxCornerRadiusBottomEnd="20dp">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/keywords"
-                    android:hint="Add more keywords..."
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Action Cards -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:orientation="horizontal"
-                android:weightSum="2">
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:background="?attr/colorSurface">
 
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/btnOpenNotifAccess"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:radius="20dp"
-                    android:elevation="6dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:layout_width="0dp"
-                    android:layout_height="120dp">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/keywordChipGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="4dp">
+                    <!-- Chips will be added here dynamically -->
+                </com.google.android.material.chip.ChipGroup>
 
-                    <TextView
-                        android:gravity="center"
-                        android:text="Notification Access"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"/>
-                </androidx.cardview.widget.CardView>
+                <EditText
+                    android:id="@+id/keywordInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Add more keywords..."
+                    android:background="@android:color/transparent"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
+                    android:textSize="16sp"
+                    android:textColor="?attr/colorOnSurface"
+                    android:inputType="text"
+                    android:imeOptions="actionDone"/>
 
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/btnChooseRingtone"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:radius="20dp"
-                    android:elevation="6dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:layout_width="0dp"
-                    android:layout_height="120dp">
-
-                    <TextView
-                        android:gravity="center"
-                        android:text="Alarm Ringtone"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"/>
-                </androidx.cardview.widget.CardView>
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <!-- Save Button -->
-            <Button
-                android:id="@+id/saveBtn"
-                android:text="Save Configuration"
-                android:textAllCaps="false"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:backgroundTint="@color/primary"
-                android:textColor="@android:color/white"
-                android:layout_marginTop="30dp"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"/>
+        <!-- Action Grid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
 
-            <TextView
-                android:text="Version 2.4.0 • Built with precision"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:gravity="center"
-                android:layout_marginTop="16dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnOpenNotifAccess"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_width="0dp"
+                android:layout_height="140dp">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="16dp"
+                    android:background="?attr/colorSurface">
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_access"
+                        app:tint="?attr/colorPrimary"
+                        android:background="@drawable/bg_icon_rounded"
+                        android:layout_marginBottom="12dp"/>
+                    <TextView
+                        android:text="Notification\nAccess"
+                        android:gravity="center"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnChooseRingtone"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_width="0dp"
+                android:layout_height="140dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="16dp"
+                    android:background="?attr/colorSurface">
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_ringtone"
+                        app:tint="?attr/colorPrimary"
+                        android:background="@drawable/bg_icon_rounded"
+                        android:layout_marginBottom="12dp"/>
+                    <TextView
+                        android:text="Alarm\nRingtone"
+                        android:gravity="center"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
+
+        <!-- Save Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/saveBtn"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:text="Save Configuration"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnPrimary"
+            app:cornerRadius="24dp"
+            app:backgroundTint="?attr/colorPrimary"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:text="Version 2.4.0 • Built with precision"
+            android:textSize="12sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="0.7"/>
 
     </LinearLayout>
 </ScrollView>
