@@ -62,7 +62,7 @@
         <!-- Main Title -->
         <TextView
             android:id="@+id/tvTitle"
-            android:text="WhatsAlarm"
+            android:text="AlertifyX"
             android:textSize="32sp"
             android:textStyle="bold"
             android:textColor="?attr/colorOnSurface"
