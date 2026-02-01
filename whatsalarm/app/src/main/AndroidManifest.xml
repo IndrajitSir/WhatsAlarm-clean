@@ -10,19 +10,27 @@
 
     <application
         android:allowBackup="true"
-        android:label="WhatsAlarm"
+        android:label="AlertifyX"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".GrantPermissionsActivity"
             android:exported="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+        </activity>
+
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false">
         </activity>
 
         <activity

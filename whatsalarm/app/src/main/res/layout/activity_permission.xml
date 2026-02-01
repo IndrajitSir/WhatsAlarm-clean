@@ -27,10 +27,11 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@color/text_primary"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
         app:layout_constraintStart_toStartOf="parent"/>
 
     <TextView
+        android:id="@+id/tvDesc"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="To provide real-time critical alerts, we need a few permissions."
@@ -45,7 +46,7 @@
     <include
         android:id="@+id/cardNotification"
         layout="@layout/item_permission"
-        app:layout_constraintTop_toBottomOf="@id/tvSubTitle"
+        app:layout_constraintTop_toBottomOf="@id/tvDesc"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp"/>

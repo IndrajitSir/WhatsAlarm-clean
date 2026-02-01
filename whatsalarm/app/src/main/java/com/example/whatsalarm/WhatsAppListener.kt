@@ -12,10 +12,10 @@ class WhatsAppListener : NotificationListenerService() {
     private val whatsappPackages = setOf("com.whatsapp", "com.whatsapp.w4b")
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val pkg = sbn.packageName ?: return
+        val pkg = sbn.packageName
         if (!whatsappPackages.contains(pkg)) return
 
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        val prefs = applicationContext.getSharedPreferences("settings", MODE_PRIVATE)
         if (!prefs.getBoolean("enabled", true)) return
         if (prefs.getBoolean("alarm_running", false)) return
 
@@ -23,43 +23,36 @@ class WhatsAppListener : NotificationListenerService() {
         val extras = notif.extras
 
         val textCandidates = mutableListOf<String>()
-        extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.let { textCandidates.add(it) }
-        extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.let { textCandidates.add(it) }
-        extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.let { textCandidates.add(it) }
-        extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString()?.let { textCandidates.add(it) }
+        extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.let(textCandidates::add)
+        extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.let(textCandidates::add)
+        extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.let(textCandidates::add)
+        extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString()?.let(textCandidates::add)
 
-        (extras.get(CharSequenceArrayExtraKey)?.let { it as? Array<CharSequence> })?.forEach {
+        (extras.get(CharSequenceArrayExtraKey) as? Array<CharSequence>)?.forEach {
             it?.toString()?.let(textCandidates::add)
         }
 
-        val messagingText = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notif)
-            ?.let { style ->
-                val sb = StringBuilder()
-                for (m in style.messages) {
-                    sb.append(m.text).append(' ')
-                }
-                sb.toString().trim()
+        NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notif)?.let { style ->
+            val sb = StringBuilder()
+            for (m in style.messages) {
+                sb.append(m.text).append(' ')
             }
-        messagingText?.let { if (it.isNotBlank()) textCandidates.add(it) }
+            val messagingText = sb.toString().trim()
+            if (messagingText.isNotBlank()) textCandidates.add(messagingText)
+        }
 
         val body = textCandidates.joinToString(" ").trim()
         if (body.isBlank()) return
 
         val keywords = prefs.getString("keywords", "")!!
-            .split(",")
+            .split(",", " ")
             .map { it.trim().lowercase() }
             .filter { it.isNotEmpty() }
 
         if (keywords.isEmpty()) return
 
-        var matchedKeyword: String? = null
-        loop@ for (text in textCandidates) {
-            for (keyword in keywords) {
-                if (text.contains(keyword, ignoreCase = true)) {
-                    matchedKeyword = keyword
-                    break@loop
-                }
-            }
+        val matchedKeyword = textCandidates.firstOrNull { text ->
+            keywords.any { keyword -> text.contains(keyword, ignoreCase = true) }
         }
 
         matchedKeyword?.let { kw ->
@@ -77,6 +70,6 @@ class WhatsAppListener : NotificationListenerService() {
     }
 
     companion object {
-        private val CharSequenceArrayExtraKey = "android.textLines"
+        private const val CharSequenceArrayExtraKey = "android.textLines"
     }
 }

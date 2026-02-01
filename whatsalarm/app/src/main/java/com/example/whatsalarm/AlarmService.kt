@@ -44,7 +44,7 @@ class AlarmService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
             when (intent?.action) {
-                ACTION_START_ALARM, "START_ALARM" -> {
+                ACTION_START_ALARM -> {
                     if (mediaPlayer != null) return START_STICKY
                     lastKeyword = intent.getStringExtra(EXTRA_KEYWORD)
                     getSharedPreferences("settings", MODE_PRIVATE)
@@ -55,12 +55,12 @@ class AlarmService : Service() {
                     startAlarmSound()
                 }
 
-                ACTION_STOP_ALARM, "STOP_ALARM" -> {
+                ACTION_STOP_ALARM -> {
                     stopAlarm()
                     stopSelf()
                 }
 
-                ACTION_SNOOZE_ALARM, "SNOOZE_ALARM" -> {
+                ACTION_SNOOZE_ALARM -> {
                     val mins = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, DEFAULT_SNOOZE_MINUTES)
                     stopAlarm()
                     scheduleSnooze(mins)
@@ -69,7 +69,7 @@ class AlarmService : Service() {
             }
         } catch (t: Throwable) {
             Log.e(TAG, "Unhandled error in onStartCommand", t)
-            getSharedPreferences("settings", MODE_PRIVATE)
+            getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .edit()
                 .putBoolean("alarm_running", false)
                 .apply()
@@ -155,7 +155,7 @@ class AlarmService : Service() {
             mediaPlayer = null
         }
 
-        getSharedPreferences("settings", MODE_PRIVATE)
+        getSharedPreferences("settings", Context.MODE_PRIVATE)
             .edit()
             .putBoolean("alarm_running", false)
             .apply()
@@ -256,7 +256,6 @@ class AlarmService : Service() {
             nm.createNotificationChannel(channel)
         }
     }
-
 
     override fun onDestroy() {
         stopAlarm()
