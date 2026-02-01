@@ -12,7 +12,7 @@
     <color name="md_theme_light_background">#FEF7FF</color>
     <color name="md_theme_light_outline">#79747E</color>
     <color name="md_theme_light_error">#B3261E</color>
-
+    <color name="cardBg">#FFFFFF</color>
     <!-- Legacy / Accessory colors -->
     <color name="accent">#6750A4</color>
     <color name="warning">#B3261E</color>
