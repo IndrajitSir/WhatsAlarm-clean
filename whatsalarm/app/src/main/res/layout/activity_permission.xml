@@ -69,8 +69,27 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"/>
 
+    <!-- Continue Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnContinue"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Continue"
+        android:textAllCaps="false"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        app:cornerRadius="16dp"
+        app:backgroundTint="@color/accent"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/tvFooter"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Footer -->
     <TextView
+        android:id="@+id/tvFooter"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="You can change permissions anytime from Settings. We value your privacy."

@@ -69,14 +69,25 @@ class GrantPermissionsActivity : AppCompatActivity() {
                 startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             }
         }
+
+        // Continue Button
+        binding.btnContinue.setOnClickListener {
+            it.animateClick()
+            navigateToMain()
+        }
     }
 
     private fun isNotificationAccessGranted(context: Context): Boolean {
-        val enabled = Settings.Secure.getString(
+        val packageName = context.packageName
+        val listeners = Settings.Secure.getString(
             context.contentResolver,
             "enabled_notification_listeners"
         )
-        return enabled?.contains(context.packageName) == true
+        if (listeners.isNullOrEmpty()) return false
+        
+        return listeners.split(":").any { 
+            it.startsWith("$packageName/") || it == packageName 
+        }
     }
 
     private fun isOverlayGranted(context: Context): Boolean {
@@ -103,11 +114,19 @@ class GrantPermissionsActivity : AppCompatActivity() {
         val notifAccessGranted = isNotificationAccessGranted(this)
         updateCardState(binding.cardNotifAccess, notifAccessGranted)
 
-        // Auto-navigate if all granted
-        if (notifPermissionGranted && overlayGranted && notifAccessGranted) {
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
+        // Show/Hide Continue button & Auto-navigate
+        val allGranted = notifPermissionGranted && overlayGranted && notifAccessGranted
+        
+        binding.btnContinue.visibility = if (allGranted) android.view.View.VISIBLE else android.view.View.GONE
+        
+        if (allGranted) {
+            navigateToMain()
         }
+    }
+
+    private fun navigateToMain() {
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
     }
 
     private fun updateCardState(itemBinding: com.example.whatsalarm.databinding.ItemPermissionBinding, isGranted: Boolean) {
